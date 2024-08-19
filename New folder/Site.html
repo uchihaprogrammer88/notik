@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --main-color: #3498db; 
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+
+        #editor {
+            position: relative;
+            display: inline-block;
+        }
+
+        #mainImg {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .text-placeholder {
+            position: absolute;
+            text-align: center;
+            width: 100%;
+            cursor: text;
+            font-weight: bold;
+            text-shadow: 
+                1px 1px 0 black, 
+                -1px 1px 0 black, 
+                1px -1px 0 black, 
+                -1px -1px 0 black;
+        }
+
+        #text1 {
+            top: 245px;
+            left: 85%;
+            transform: translateX(-50%);
+        }
+
+        #text2 {
+            top: 280px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background-color: white;
+            border: 2px solid #000;
+            z-index: 1000;
+        }
+
+        #mousePos {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: white;
+            border: 1px solid #000;
+            padding: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="editor">
+        <img src="bruh.png" alt="Main Image" id="mainImg">
+        <div class="text-placeholder" id="text1" contenteditable="true">Click to edit text 1</div>
+        <div class="text-placeholder" id="text2" contenteditable="true">Click to edit text 2</div>
+    </div>
+    <br><br>
+    
+    <label for="colorPicker1">Text 1 Color:</label>
+    <input type="color" id="colorPicker1" value="#ff0000">
+    
+    <label for="fontSize1">Text 1 Size:</label>
+    <input type="number" id="fontSize1" value="20" min="10" max="100"> px
+
+    <br><br>
+    
+    <label for="colorPicker2">Text 2 Color:</label>
+    <input type="color" id="colorPicker2" value="#ff0000">
+    
+    <label for="fontSize2">Text 2 Size:</label>
+    <input type="number" id="fontSize2" value="20" min="10" max="100"> px
+
+    <br><br>
+    <button onclick="downloadImage()">Download Image</button>
+    <br><br>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <div id="popup">
+        <p>Adjust your image position and size, then click "Continue" to proceed.</p>
+        <button onclick="continueImage()">Continue</button>
+    </div>
+
+    <div id="mousePos">X: 0, Y: 0</div>
+
+    <script>
+        const colorPicker1 = document.getElementById('colorPicker1');
+        const colorPicker2 = document.getElementById('colorPicker2');
+        const fontSize1 = document.getElementById('fontSize1');
+        const fontSize2 = document.getElementById('fontSize2');
+        const text1 = document.getElementById('text1');
+        const text2 = document.getElementById('text2');
+        const popup = document.getElementById('popup');
+        const mousePos = document.getElementById('mousePos');
+
+        function updateTextStyles() {
+            text1.style.fontSize = `${fontSize1.value}px`;
+            text1.style.color = colorPicker1.value;
+            text2.style.fontSize = `${fontSize2.value}px`;
+            text2.style.color = colorPicker2.value;
+        }
+
+        function downloadImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const mainImg = document.getElementById('mainImg');
+
+            const imageLoadPromise = new Promise((resolve) => {
+                mainImg.onload = () => resolve();
+                if (mainImg.complete) {
+                    resolve();
+                }
+            });
+
+            imageLoadPromise.then(() => {
+                canvas.width = mainImg.naturalWidth;
+                canvas.height = mainImg.naturalHeight;
+
+                const mainImgRect = mainImg.getBoundingClientRect();
+                const scale = mainImg.naturalWidth / mainImgRect.width;
+
+                ctx.drawImage(mainImg, 0, 0, canvas.width, canvas.height);
+
+                ctx.font = `bold ${fontSize1.value * scale}px Arial`;
+                ctx.fillStyle = colorPicker1.value;
+                ctx.textAlign = 'center';
+                const text1Rect = text1.getBoundingClientRect();
+                const text1X = (text1Rect.left + text1Rect.width / 2 - mainImgRect.left) * scale;
+                const text1Y = (text1Rect.top + parseInt(fontSize1.value) - mainImgRect.top) * scale;
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = 'black';
+                ctx.strokeText(text1.textContent, text1X, text1Y);
+                ctx.fillText(text1.textContent, text1X, text1Y);
+
+                ctx.font = `bold ${fontSize2.value * scale}px Arial`;
+                ctx.fillStyle = colorPicker2.value;
+                const text2Rect = text2.getBoundingClientRect();
+                const text2X = (text2Rect.left + text2Rect.width / 2 - mainImgRect.left) * scale;
+                const text2Y = (text2Rect.top + parseInt(fontSize2.value) - mainImgRect.top) * scale;
+                ctx.strokeText(text2.textContent, text2X, text2Y);
+                ctx.fillText(text2.textContent, text2X, text2Y);
+
+                const link = document.createElement('a');
+                link.download = 'edited-image.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        fontSize1.addEventListener('input', updateTextStyles);
+        fontSize2.addEventListener('input', updateTextStyles);
+        colorPicker1.addEventListener('input', updateTextStyles);
+        colorPicker2.addEventListener('input', updateTextStyles);
+
+        updateTextStyles(); // Initialize text styles
+    </script>
+</body>
+</html>
