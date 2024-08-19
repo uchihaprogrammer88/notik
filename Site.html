@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مضاد اتقان 1.0</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+
+        #editor {
+            position: relative;
+            display: inline-block;
+        }
+
+        #mainImg {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        #placeholder {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            overflow: hidden;
+            position: absolute;
+            top: 110px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 2px dashed #000;
+            display: none;
+        }
+
+        #placeholder img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: move;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .text-placeholder {
+            position: absolute;
+            color: red;
+            text-align: center;
+            width: 100%;
+            cursor: text;
+        }
+
+        #text1 {
+            top: 400px;
+            left: 50%;
+            font-size: xx-large;
+            transform: translateX(-50%);
+        }
+
+        #text2 {
+            top: 535px;
+            left: 30%;
+            transform: translateX(-50%);
+        }
+
+        #popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background-color: white;
+            border: 2px solid #000;
+            z-index: 1000;
+        }
+
+        #mousePos {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: white;
+            border: 1px solid #000;
+            padding: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>مضاد اتقان 1.0</h1>
+    <div id="editor">
+        <img src="C:\Users\ANA\Desktop\New folder\التقدير.png" alt="Main Image" id="mainImg">
+        <div id="placeholder">
+            <img id="uploadedImg" alt="Uploaded Image">
+        </div>
+        <div class="text-placeholder" id="text1" contenteditable="true">Click to edit text 1</div>
+        <div class="text-placeholder" id="text2" contenteditable="true">Click to edit text 2</div>
+    </div>
+    <br><br>
+    
+    <label for="colorPicker">Text Color:</label>
+    <input type="color" id="colorPicker" value="#ff0000">
+    
+    <label for="fontSize1">Text 1 Size:</label>
+    <input type="number" id="fontSize1" value="20" min="10" max="100"> px
+
+    <label for="fontSize2">Text 2 Size:</label>
+    <input type="number" id="fontSize2" value="20" min="10" max="100"> px
+
+    <br><br>
+    <input type="file" id="upload" accept="image/*">
+    <br><br>
+    <button onclick="downloadImage()">Download Image</button>
+    <br><br>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <div id="popup">
+        <p>Adjust your image position and size, then click "Continue" to proceed.</p>
+        <button onclick="continueImage()">Continue</button>
+    </div>
+
+    <div id="mousePos">X: 0, Y: 0</div>
+
+    <script>
+        const upload = document.getElementById('upload');
+        const uploadedImg = document.getElementById('uploadedImg');
+        const placeholder = document.getElementById('placeholder');
+        const popup = document.getElementById('popup');
+        const text1 = document.getElementById('text1');
+        const text2 = document.getElementById('text2');
+        const mousePos = document.getElementById('mousePos');
+        const colorPicker = document.getElementById('colorPicker');
+        const fontSize1 = document.getElementById('fontSize1');
+        const fontSize2 = document.getElementById('fontSize2');
+
+        let imgPosition = { x: 0, y: 0 };
+        let isDragging = false;
+        let isImageFinalized = false;
+
+        upload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    uploadedImg.src = event.target.result;
+                    placeholder.style.display = 'block';
+                    popup.style.display = 'block';
+                    uploadedImg.onload = () => {
+                        uploadedImg.style.width = '100%';
+                        uploadedImg.style.height = '100%';
+                        imgPosition = { x: 0, y: 0 };
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        placeholder.addEventListener('mousedown', (e) => {
+            if (!isImageFinalized) {
+                isDragging = true;
+                imgPosition.x = e.clientX - uploadedImg.offsetLeft;
+                imgPosition.y = e.clientY - uploadedImg.offsetTop;
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging && !isImageFinalized) {
+                const x = e.clientX - imgPosition.x;
+                const y = e.clientY - imgPosition.y;
+                uploadedImg.style.left = `${x}px`;
+                uploadedImg.style.top = `${y}px`;
+            }
+
+            mousePos.textContent = `X: ${e.clientX}, Y: ${e.clientY}`;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        function continueImage() {
+            popup.style.display = 'none';
+            placeholder.style.border = 'none';
+            isImageFinalized = true;
+            uploadedImg.style.cursor = 'default';
+        }
+
+        colorPicker.addEventListener('input', () => {
+            text1.style.color = colorPicker.value;
+            text2.style.color = colorPicker.value;
+        });
+
+        fontSize1.addEventListener('input', () => {
+            text1.style.fontSize = `${fontSize1.value}px`;
+        });
+
+        fontSize2.addEventListener('input', () => {
+            text2.style.fontSize = `${fontSize2.value}px`;
+        });
+
+        function downloadImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const mainImg = document.getElementById('mainImg');
+
+            // Set canvas dimensions based on the aspect ratio of 9:16
+            const aspectRatio = 9 / 16;
+            canvas.width = mainImg.naturalWidth;
+            canvas.height = mainImg.naturalHeight;
+
+            ctx.drawImage(mainImg, 0, 0, canvas.width, canvas.height);
+
+            const placeholderRect = placeholder.getBoundingClientRect();
+            const uploadedImgRect = uploadedImg.getBoundingClientRect();
+            const x = uploadedImgRect.left - placeholderRect.left;
+            const y = uploadedImgRect.top - placeholderRect.top;
+            const diameter = placeholder.clientWidth;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(placeholderRect.left + diameter / 2, placeholderRect.top + diameter / 2, diameter / 2, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+            ctx.drawImage(uploadedImg, x, y, uploadedImg.width, uploadedImg.height);
+            ctx.restore();
+
+            ctx.font = `${fontSize1.value}px Arial`;
+            ctx.fillStyle = colorPicker.value;
+            ctx.textAlign = 'center';
+            ctx.fillText(text1.textContent, canvas.width / 2, 150);
+
+            ctx.font = `${fontSize2.value}px Arial`;
+            ctx.fillText(text2.textContent, canvas.width / 2, canvas.height - 50); 
+
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = 'edited-image.png';
+            link.click();
+        }
+    </script>
+</body>
+</html>
